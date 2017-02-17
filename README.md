@@ -41,7 +41,7 @@ Note that all the rules with instances are automatically added.
 
 #Why should I use this library?
 - It prints all the added rules in the logger window.
-This makes earching for errors really easy.
+This makes searching for errors really easy.
 ````
 +--------------------------------------------------------------------------------+
 | Adding Rules:                                                                  |
