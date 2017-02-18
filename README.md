@@ -6,11 +6,17 @@ The goal of this project is to make the scripting with jython easier and less pr
 #Usage
 - Add ```"-Dpython.path="configurations/scripts/lib""``` to the java args of openhab
 - Copy the ```lib``` folder to ```configurations/scripts``` so all the files are in ```.../scripts/lib/```
+- Create a new (Switch) item "Initialize" (name can be configured).
+```
+Switch Initialize "Initialize"
+````
+
 - When creating a new script start with
 ```python
 import ScriptHelper as SH
 helper = SH.ScriptHelper( "ModuleName")
 ```
+
 - When creating a new rule do the following:
 ```python
 class MyJSR223RuleName(SH.EasyRule):
@@ -67,3 +73,5 @@ This makes searching for errors really easy.
 | Rule 'Rule3' is OK!                                                            |
 +--------------------------------------------------------------------------------+
 ````
+- It makes initializing rule variables very easy
+When an the initialization item (typically "Initialize") receives a change to ON the Initialize-function of all rule classes are called. This results in a defined state like after startup.
