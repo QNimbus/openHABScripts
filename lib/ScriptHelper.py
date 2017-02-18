@@ -1,7 +1,5 @@
 """
-Created on Sun Jul  3 18:52:58 2016
 
-@author: Sebastian
 """
 from oh_globals import *
 
@@ -11,6 +9,9 @@ logger = oh.getLogger("ScriptHelper")
 
 
 class ScriptHelper(Rule):
+    
+    InitializationItem          = "Initialize"
+    CheckTriggerItemsOnlyOnce   = True
     
     def logerror( self, *args, **kwargs):
         self.logger.error(*args, **kwargs)
@@ -31,7 +32,6 @@ class ScriptHelper(Rule):
         #init vars
         self.__rules  = []
         self.__rules.append(self)
-        self.__init_item = "Initialize"
         
         #Vars for RuleCheck
         self.__intend_str = 80
@@ -39,7 +39,7 @@ class ScriptHelper(Rule):
         
         #optional args
         if "INIT_ITEM" in kwargs:
-            self.__init_item = kwargs["INIT_ITEM"]
+            ScriptHelper.InitializationItem = kwargs["INIT_ITEM"]
         
     #Called by EasyRule
     def _AddRule(self, my_rule):
@@ -54,7 +54,7 @@ class ScriptHelper(Rule):
             return None
 
         #Do TriggerCheck only once!
-        if self.__TriggerCheckDone:
+        if self.__TriggerCheckDone and ScriptHelper.CheckTriggerItemsOnlyOnce:
             return None
         self.__TriggerCheckDone = True
 
@@ -120,16 +120,15 @@ class ScriptHelper(Rule):
 
     def getEventTrigger(self):
         return [
-            ChangedEventTrigger( self.__init_item, None, OnOffType.ON),
-            ChangedEventTrigger( "aadf", None, OnOffType.ON),
+            ChangedEventTrigger( ScriptHelper.InitializationItem, None, OnOffType.ON),
             StartupTrigger()
         ]
 
     def __ItemsAvailable(self):
-        if not len( ItemRegistry.getItems( self.__init_item)):
+        if not len( ItemRegistry.getItems( ScriptHelper.InitializationItem)):
             return False
         
-        if str(ItemRegistry.getItem( self.__init_item).state) == "Uninitialized":
+        if str(ItemRegistry.getItem( ScriptHelper.InitializationItem).state) == "Uninitialized":
             return False
         
         return True
