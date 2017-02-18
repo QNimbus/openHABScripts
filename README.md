@@ -73,5 +73,5 @@ This makes searching for errors really easy.
 | Rule 'Rule3' is OK!                                                            |
 +--------------------------------------------------------------------------------+
 ````
-- It makes initializing rule variables very easy
+- It makes initializing rule variables very easy! 
 When an the initialization item (typically "Initialize") receives a change to ON the Initialize-function of all rule classes are called. This results in a defined state like after startup.
