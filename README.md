@@ -73,5 +73,11 @@ This makes searching for errors really easy.
 | Rule 'Rule3' is OK!                                                            |
 +--------------------------------------------------------------------------------+
 ````
-- It makes initializing rule variables very easy! 
-When an the initialization item (typically "Initialize") receives a change to ON the Initialize-function of all rule classes are called. This results in a defined state like after startup.
+- It makes initializing rule variables very easy!
+Just Drag and Drop the new Rule into the folder and the Initialize functions are called.
+It even works during startup.
+- Possibility to set openHAB back to a defined state.
+Just change the initialization item to ON and everything will be as it is supposed to be.
+No more posting states to items or calling functions manually.
+One click/post and everything is like after startup.
+
