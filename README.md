@@ -1,51 +1,29 @@
-# openHABScripts
-This is a library for the JSR223 scripting engine on openHAB.
+#openHABScripts & EasyRule
+This is a library for the JSR223 scripting engine on openHAB which is aiming to make the scripting with jython easier and less prone to errors.
+This is also the home of EasyRule.
 
-The goal of this project is to make the scripting with jython easier and less prone to errors.
 
-#Usage
+#Setup
 - Add ```"-Dpython.path="configurations/scripts/lib""``` to the java args of openhab
 - Copy the ```lib``` folder to ```configurations/scripts``` so all the files are in ```.../scripts/lib/```
 - Create a new (Switch) item "Initialize" (name can be configured).
-```
-Switch Initialize "Initialize"
-````
+```Switch Initialize "Initialize"```
 
-- When creating a new script start with
+#How does this help me?
+- It automatically creates the ```getRules()``` function. No need to manually track the created rules.
+- It makes initializing rule variables very easy!
+Just Drag and Drop the new Rule into the folder and the Initialize functions are called.
+It even works during startup.
+- Possibility to set openHAB back to a defined state.
+Just change the initialization item to ON and everything will be as it is supposed to be.
+No more posting states to items or calling functions manually.
+One click/post and everything is like after startup.
+- Small Rules can be created really convenient: 
 ```python
-import ScriptHelper as SH
-helper = SH.ScriptHelper( "ModuleName")
+@EasyRule.ItemChanged("Itemname")
+def MyRule1():
+    BusEvent.postUpdate("Itemname", "0")
 ```
-
-- When creating a new rule do the following:
-```python
-class MyJSR223RuleName(SH.EasyRule):
-    def __init__(self):
-        #add this line or the lib won't work
-        SH.EasyRule.__init__(self, helper)
-        
-        #define your variables here
-        self.__myvariable = 0
-    def Initialize(self):
-        #initialize all your variables and required states here
-        self.__myvariable = 0
-
-#create an instance of the rule
-#Note: this is different! Creating an instance is enough!
-MyJSR223RuleName()
-```
-- At the End of the file do the following
-```python
-def getRules():
-    return RuleSet(helper.GetRules() + [
-        MyLegacyrule()
-    ])
-```
-Note that all the rules with instances are automatically added.
-
-
-
-#Why should I use this library?
 - It prints all the added rules in the logger window.
 This makes searching for errors really easy.
 ````
@@ -61,7 +39,7 @@ This makes searching for errors really easy.
 +--------------------------------------------------------------------------------+
 | Checking Rule1:                                                                |
 |  - Found item 'MyItem1' for ChangedEventTrigger                                |
-|  - Could not find item 'NonexistingItem1' for ChangedEventTrigger               |
+|  - Could not find item 'NonexistingItem1' for ChangedEventTrigger              |
 | Rule 'Rule1' is not OK!                                                        |
 +--------------------------------------------------------------------------------+
 | Checking Rule2:                                                                |
@@ -73,11 +51,58 @@ This makes searching for errors really easy.
 | Rule 'Rule3' is OK!                                                            |
 +--------------------------------------------------------------------------------+
 ````
-- It makes initializing rule variables very easy!
-Just Drag and Drop the new Rule into the folder and the Initialize functions are called.
-It even works during startup.
-- Possibility to set openHAB back to a defined state.
-Just change the initialization item to ON and everything will be as it is supposed to be.
-No more posting states to items or calling functions manually.
-One click/post and everything is like after startup.
 
+#How do I use it
+
+```python
+import EasyRule
+
+#it is also recommended to create a helper item but not necessary
+helper = EasyRule.ScriptHelper( "myScriptName")
+```
+
+#Simple Rules
+Simple Rules are just small function calls. Create a function you like and just add the corresponding decorator:
+```python
+#Easy ItemChanged - Rule declaration.
+@EasyRule.ItemChanged("Itemname")
+def MyRule1():
+    BusEvent.postUpdate("Itemname", "0")
+
+#no need to use oh-vars for the trigger anymore
+#the integer gets automatically converted to the corresponding type
+@EasyRule.ItemChanged("NumberItem", None, 1)
+def MyRule1Changed():
+    BusEvent.postUpdate("NumberItem", "0")
+
+#Easy ItemUpdated- Rule declaration.
+@EasyRule.ItemUpdated("Itemname")
+def MyRule2():
+    BusEvent.postUpdate("Itemname", "0")
+
+#Easy TimerTrigger- Rule declaration.
+@EasyRule.TimerTrigger("Chron")
+def MyRule3():
+    BusEvent.postUpdate("Itemname", "0")
+```
+
+#Simple Rules with event
+It is also possible to access the event-item. To achieve this just add a parameter to your function. 
+```python
+#Accessing the event-item is also possible:
+@EasyRule.ItemChanged("TestString")
+def MyRule1(event):
+    print(event)
+
+#Easy ItemUpdated- Rule declaration.
+@EasyRule.ItemUpdated("TestString")
+def MyRule2(event):
+    print(event)
+```
+
+The variables of the event get automatically converted to the jython equivalent (DecimalType -> int/float, DateTime to float, StringType -> str). The above two rules produce the following output:
+````
+Event [triggerType=CHANGE, item=TestString (Type=StringItem, State=ON, ohitem=(...)), oldState=OFF, newState=ON, command=None, ohEvent=(...)]
+Event [triggerType=UPDATE, item=TestString (Type=StringItem, State=ON, ohitem=(...)), oldState=None, newState=ON, command=None, ohEvent=(...)]
+````
+Accessing the original item is still possible. Just use the ohitem or ohEvent vars.
