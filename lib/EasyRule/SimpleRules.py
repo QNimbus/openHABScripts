@@ -1,6 +1,6 @@
 import functools
 
-from OHImports import ChangedEventTrigger, UpdatedEventTrigger, TimerTrigger
+from OHImports import ChangedEventTrigger, UpdatedEventTrigger, TimerTrigger, CommandEventTrigger
 from OHImports import StringType, DecimalType
 from OHImports import oh
 logger = oh.getLogger("EasyRule.SimpleRules")
@@ -54,6 +54,24 @@ def __MapUpserFunction(user_function):
     return user_function
 
 
+
+def CommandDecorator( *args):
+    _args = len(args)
+    logger.debug("Call CommandDecorator with {} args: {}".format(_args, args))
+    if _args != 2 and _args != 1:
+        logger.error("CommandDecorator requires 1 or 2 parameters! Given: {} [{}]".format(_args, args))
+        return None
+
+    def inner_func( user_function):
+        trig = None
+        if _args == 1:
+            trig = CommandEventTrigger( str(args[0]) )
+        else:
+            trig = CommandEventTrigger( str(args[0]) , __MapDataTypes(args[1]))
+
+        SimpleRule( trig, __MapUpserFunction(user_function), name=user_function.__name__)
+
+    return inner_func
 
 
 

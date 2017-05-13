@@ -20,6 +20,7 @@ reload(OHTypes)
 from SimpleRules    import ItemChangedDecorator     as ItemChanged
 from SimpleRules    import ItemUpdatedDecorator     as ItemUpdated
 from SimpleRules    import TimerTriggerDecorator    as TimerTrigger
+from SimpleRules    import CommandDecorator         as CommandTrigger
 
 from BaseRule       import BaseRuleDecorator        as Rule
 from BaseRule       import SetExceptionHandler      as SetExceptionHandler
