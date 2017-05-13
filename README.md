@@ -106,3 +106,52 @@ Event [triggerType=CHANGE, item=TestString (Type=StringItem, State=ON, ohitem=(.
 Event [triggerType=UPDATE, item=TestString (Type=StringItem, State=ON, ohitem=(...)), oldState=None, newState=ON, command=None, ohEvent=(...)]
 ````
 Accessing the original item is still possible. Just use the ohitem or ohEvent vars.
+
+# ExceptionHandler
+Every rule is equipped with an exception handler. This will print stack traces which help to identify the error. Additionally it is possible to provide a custom handler for all rules.
+This example sends the error Messages via Pushover to a mobile device.
+```python
+import traceback
+def PushToPushover(Rule, exception):
+    pushover = oh.getAction("Pushover")
+
+    tb = traceback.format_exc()
+
+    #try slicing - this is just to make it look pretty
+    searchstr = "return cls.execute(self, Event(event) if self.ProcessEvents else event)"
+    len_seach = len(searchstr)
+    pos = tb.rfind(searchstr)
+    if pos != -1:
+        tb = tb[-1 * len(tb) + pos + len_seach:]
+
+    pushover.pushover("Error in '{}':\n'{}'\n\n{}".format(Rule.name, exception, tb[-400:].strip(), 1))
+
+#this sets the own ExceptionHandler
+EasyRule.SetExceptionHandler(PushToPushover)
+```
+
+# ComplexRules
+Creating complex rules is working almost like in standard jython. 
+
+```python
+@EasyRule.Rule
+class cContact:
+    #no need to call the base-class
+    def __init__(self, item_name):
+        self.__trigger_item = item_name
+        self.__counter_item = cContact.__item_alias[item_name]
+
+    #convenient initializer function
+    def Initialize(self):
+        print( "This function still gets called when the rule is loaded or the init-item changes to ON")
+
+    def execute(self, event):
+        #the event has the converted variables, too!
+        myfloatvar = event.item.state
+
+        #per Rule logger is automatically available
+        self.logger.warning("asdfasdf")
+
+#instantiation of the class is enough to automatically add it
+cContact("MyItem")
+```
