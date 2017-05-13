@@ -1,15 +1,15 @@
-#openHABScripts & EasyRule
+# openHABScripts & EasyRule
 This is a library for the JSR223 scripting engine on openHAB which is aiming to make the scripting with jython easier and less prone to errors.
 This is also the home of EasyRule.
 
 
-#Setup
+# Setup
 - Add ```"-Dpython.path="configurations/scripts/lib""``` to the java args of openhab
 - Copy the ```lib``` folder to ```configurations/scripts``` so all the files are in ```.../scripts/lib/```
 - Create a new (Switch) item "Initialize" (name can be configured).
 ```Switch Initialize "Initialize"```
 
-#How does this help me?
+# How does this help me?
 - It automatically creates the ```getRules()``` function. No need to manually track the created rules.
 - It makes initializing rule variables very easy!
 Just Drag and Drop the new Rule into the folder and the Initialize functions are called.
@@ -52,7 +52,7 @@ This makes searching for errors really easy.
 +--------------------------------------------------------------------------------+
 ````
 
-#How do I use it
+# How do I use it
 
 ```python
 import EasyRule
@@ -61,7 +61,7 @@ import EasyRule
 helper = EasyRule.ScriptHelper( "myScriptName")
 ```
 
-#Simple Rules
+# Simple Rules
 Simple Rules are just small function calls. Create a function you like and just add the corresponding decorator:
 ```python
 #Easy ItemChanged - Rule declaration.
@@ -86,7 +86,7 @@ def MyRule3():
     BusEvent.postUpdate("Itemname", "0")
 ```
 
-#Simple Rules with event
+# Simple Rules with event
 It is also possible to access the event-item. To achieve this just add a parameter to your function. 
 ```python
 #Accessing the event-item is also possible:
