@@ -1,6 +1,6 @@
 import sys
 import ScriptHelper
-from OHTypes import ItemRegistry
+from OHTypes import ItemRegistry, BusEvent
 
 
 from OHImports import oh
@@ -45,6 +45,12 @@ def GetScriptHelper():
     if str(type(vars['ir'])) == "<type 'org.openhab.core.internal.items.ItemRegistryImpl'>":
         logger.debug("Replaced ItemRegistry")
         vars['ItemRegistry'] = vars['ir'] = ItemRegistry()
+
+
+    #replace item registry with new one
+    if not isinstance(vars['BusEvent'], BusEvent):
+        logger.debug("Replaced BusEvent")
+        vars['BusEvent'] = vars['be'] = BusEvent()
 
 
     return helper

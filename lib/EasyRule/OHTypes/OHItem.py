@@ -1,7 +1,8 @@
 from ..OHImports import BusEvent, oh, HSBType
 logger = oh.getLogger("EasyRule.OHTypes.OHItem")
 
-from __convert import ToString, ToNumeric, ToTimestamp
+from __convertToJython  import ToString,    ToNumeric, ToTimestamp
+from __convertToJava    import FromString
 
 class BaseItem:
 
@@ -18,20 +19,23 @@ class BaseItem:
     #I am not sure if this can update alone?
     @property
     def state(self):
-        return self.convertvalue(self.ohitem.state)
+        return self.convertValueToJython(self.ohitem.state)
 
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         return ToString(val, self.name)
+
+    def convertValueToJava(self, val):
+        return FromString( val, self.name)
 
     def __repr__(self):
         return u"{} (Type={}, State={}, {}ohitem=(...))".format( self.name, self.type, self.state, self.reprstr + ", " if self.reprstr != "" else "")
 
     def postUpdate(self, new_state):
-        BusEvent.postUpdate( self.ohitem, str(new_state))
+        BusEvent.postUpdate( self.ohitem, self.convertValueToJava(new_state))
 
     def sendCommand(self, command):
-        BusEvent.postUpdate( self.ohitem, str(command))
+        BusEvent.postUpdate( self.ohitem, self.convertValueToJava(command))
 
 
 class ContactItem(BaseItem):
@@ -46,9 +50,9 @@ class SwitchItem(BaseItem):
     def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
-        self.isON  = True if self.state == "ON"  else False
-        self.isOFF = True if self.state == "OFF" else False
-        self.reprstr = "isON={}, isOFF={}".format( str(self.isON), str(self.isOFF))
+        self.isOn  = True if self.state == "ON"  else False
+        self.isOff = True if self.state == "OFF" else False
+        self.reprstr = "isOn={}, isOff={}".format( str(self.isOn), str(self.isOff))
 
 class StringItem(BaseItem):
     def __init__(self, ohitem):
@@ -58,7 +62,7 @@ class NumberItem(BaseItem):
     def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         return ToNumeric(val, self.name)
 
 
@@ -66,21 +70,21 @@ class PercentItem(BaseItem):
     def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         return ToNumeric(val, self.name)
 
 class DimmerItem(BaseItem):
     def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         return ToNumeric(val, self.name)
 
 class DateTimeItem(BaseItem):
     def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         return ToTimestamp(val, self.name)
 
 
@@ -94,7 +98,7 @@ class ColorItem(BaseItem):
         BaseItem.__init__(self, ohitem)
         self.reprstr = "hue={}, saturation={}, brightness={}".format(self.hue, self.saturation,self.brightness)
 
-    def convertvalue(self, val):
+    def convertValueToJython(self, val):
         state = ToString(val, self.name)
         if state is None:
             return

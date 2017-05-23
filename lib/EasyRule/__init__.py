@@ -30,5 +30,7 @@ from ScriptHelper   import ScriptHelper
 
 from OHTypes import ConvertItem
 from OHTypes import ItemRegistry as __ItemRegistry
+from OHTypes import BusEvent as __BusEvent
 
 ItemRegistry = ir = __ItemRegistry()
+BusEvent = be = __BusEvent()
