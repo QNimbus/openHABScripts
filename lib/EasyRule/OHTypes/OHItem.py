@@ -1,29 +1,41 @@
-from .. import OHImports
-logger = OHImports.oh.getLogger("EasyRule.OHTypes.Item")
+from ..OHImports import BusEvent, oh, HSBType
+logger = oh.getLogger("EasyRule.OHTypes.OHItem")
 
 from __convert import ToString, ToNumeric, ToTimestamp
 
 class BaseItem:
 
-    def __init__(self, ohitem = None):
-        self.name   = None
-        self.state  = None
-        self.reprstr = ""
-        self.ohitem = ohitem
-        self.type = self.__class__.__name__
+    def __init__(self, ohitem):
 
-        if ohitem:
-            self.name = str(ohitem.name)
-            self.state = self.convertvalue(ohitem.state)
+        self.type = self.__class__.__name__
+        self.reprstr = ""
+
+        assert ohitem is not None
+        self.ohitem = ohitem
+        self.name   = str(ohitem.name)
+
+    #refresh value directly from item
+    #I am not sure if this can update alone?
+    @property
+    def state(self):
+        return self.convertvalue(self.ohitem.state)
+
 
     def convertvalue(self, val):
-        return ToString(val)
+        return ToString(val, self.name)
 
     def __repr__(self):
-        return "{} (Type={}, State={}, {}ohitem=(...))".format( self.name, self.type, self.state, self.reprstr + ", " if self.reprstr != "" else "")
+        return u"{} (Type={}, State={}, {}ohitem=(...))".format( self.name, self.type, self.state, self.reprstr + ", " if self.reprstr != "" else "")
+
+    def postUpdate(self, new_state):
+        BusEvent.postUpdate( self.ohitem, str(new_state))
+
+    def sendCommand(self, command):
+        BusEvent.postUpdate( self.ohitem, str(command))
+
 
 class ContactItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
         self.isOpen   = True if self.state == "OPEN"   else False
@@ -31,7 +43,7 @@ class ContactItem(BaseItem):
         self.reprstr = "isOpen={}, isClosed={}".format( str(self.isOpen), str(self.isClosed))
 
 class SwitchItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
         self.isON  = True if self.state == "ON"  else False
@@ -39,38 +51,60 @@ class SwitchItem(BaseItem):
         self.reprstr = "isON={}, isOFF={}".format( str(self.isON), str(self.isOFF))
 
 class StringItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
 class NumberItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
     def convertvalue(self, val):
-        return ToNumeric(val)
+        return ToNumeric(val, self.name)
 
 
 class PercentItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
     def convertvalue(self, val):
-        return ToNumeric(val)
+        return ToNumeric(val, self.name)
 
 class DimmerItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
     def convertvalue(self, val):
-        return ToNumeric(val)
+        return ToNumeric(val, self.name)
 
 class DateTimeItem(BaseItem):
-    def __init__(self, ohitem = None):
+    def __init__(self, ohitem):
         BaseItem.__init__(self, ohitem)
 
     def convertvalue(self, val):
-        return ToTimestamp(val)
+        return ToTimestamp(val, self.name)
 
+
+class ColorItem(BaseItem):
+    def __init__(self, ohitem):
+        self.hue        = None
+        self.saturation = None
+        self.brightness = None
+
+        #deklaration unbedingt vorher, hier werden sie gesetzt!
+        BaseItem.__init__(self, ohitem)
+        self.reprstr = "hue={}, saturation={}, brightness={}".format(self.hue, self.saturation,self.brightness)
+
+    def convertvalue(self, val):
+        state = ToString(val, self.name)
+        if state is None:
+            return
+
+        #update values
+        hsb = HSBType(state)
+        self.hue        = ToNumeric(hsb.hue,        self.name + ".hue")
+        self.saturation = ToNumeric(hsb.saturation, self.name + ".saturation")
+        self.brightness = ToNumeric(hsb.brightness, self.name + ".brightness")
+        return state
 
 
 
@@ -94,8 +128,14 @@ def ConvertItem( ohitem):
         return SwitchItem(ohitem)
     elif _type == "<type 'org.openhab.core.library.items.DateTimeItem'>":
         return DateTimeItem(ohitem)
+    elif _type == "<type 'org.openhab.core.library.items.ColorItem'>":
+        return ColorItem(ohitem)
 
-    logger.warning( "Unknown item type \"{}\"".format(_type))
+    # import inspect
+    # for k in dir(ohitem.state):
+    #     print("{:30} : {}".format(k, ""))
+
+    logger.warn( "Unknown item type \"{}\" : \"{}\"".format(_type, ohitem))
     return BaseItem(ohitem)
 
 

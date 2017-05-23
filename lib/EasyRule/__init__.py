@@ -28,4 +28,7 @@ from BaseRule       import SetExceptionHandler      as SetExceptionHandler
 #ScriptHelper
 from ScriptHelper   import ScriptHelper
 
-from OHTypes import ConvertItem as ConvertItem
+from OHTypes import ConvertItem
+from OHTypes import ItemRegistry as __ItemRegistry
+
+ItemRegistry = ir = __ItemRegistry()

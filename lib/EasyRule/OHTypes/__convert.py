@@ -1,27 +1,46 @@
 from .. import OHImports
 logger = OHImports.oh.getLogger("EasyRule.OHTypes.__convert")
 
-def ToNumeric(javavar):
-    if javavar is None:
+
+def ToNumeric(javaval, varname):
+    if javaval is None:
         return None
 
-    _str = str(javavar)
+    _str = str(javaval)
     try:
         return int(_str)
     except ValueError:
         try:
             return float(_str)
         except ValueError as e:
-            logger.error("Error for '{}' : {}".format(javavar, e))
-            raise e
+            logger.error("Error converting '{}' ({}) : {}!".format(varname, javaval, e))
+            return None
 
-def ToString(javavar):
-    if javavar is None:
+
+def ToString(javaval, varname):
+    if javaval is None:
         return None
-    return str(javavar)
 
-def ToTimestamp(javavar):
-    if javavar is None:
+    #use unicode for values!
+    _str = unicode(javaval, "utf-8")
+
+    if _str == u"Uninitialized":
         return None
-    return float( (OHImports.DateTimeType( str(javavar))).calendar.timeInMillis ) / 1000.0
 
+    return _str
+
+
+
+def ToTimestamp(javaval, varname):
+    if javaval is None:
+        return None
+
+    _str = str(javaval)
+    if _str == u"Uninitialized":
+        return None
+
+    try:
+        return float( OHImports.DateTimeType( _str).calendar.timeInMillis ) / 1000.0
+    except ValueError as e:
+        logger.error("Error converting '{}' ({}) : {}!".format(varname, javaval, e))
+        return None

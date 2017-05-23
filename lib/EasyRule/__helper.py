@@ -1,5 +1,6 @@
 import sys
 import ScriptHelper
+from OHTypes import ItemRegistry
 
 
 from OHImports import oh
@@ -38,5 +39,12 @@ def GetScriptHelper():
     if not 'getRules' in vars:
         logger.debug("Injected getRules function")
         vars['getRules'] = helper.GetRules
+
+
+    #replace item registry with new one
+    if str(type(vars['ir'])) == "<type 'org.openhab.core.internal.items.ItemRegistryImpl'>":
+        logger.debug("Replaced ItemRegistry")
+        vars['ItemRegistry'] = vars['ir'] = ItemRegistry()
+
 
     return helper
