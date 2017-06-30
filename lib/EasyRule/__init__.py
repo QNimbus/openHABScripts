@@ -6,15 +6,15 @@ import ScriptHelper
 import SimpleRules
 
 import OHTypes
-
+import FiFo
 
 
 reload(__helper)
 reload(BaseRule)
 reload(ScriptHelper)
 reload(SimpleRules)
-
 reload(OHTypes)
+reload(FiFo)
 
 #decorators
 from SimpleRules    import ItemChangedDecorator     as ItemChanged
@@ -31,6 +31,8 @@ from ScriptHelper   import ScriptHelper
 from OHTypes import ConvertItem
 from OHTypes import ItemRegistry as __ItemRegistry
 from OHTypes import BusEvent as __BusEvent
+
+from FiFo import FiFo
 
 ItemRegistry = ir = __ItemRegistry()
 BusEvent = be = __BusEvent()
