@@ -18,9 +18,8 @@ class FiFo:
                 assert isinstance(args[i], str), "Arguments of FiFo must be Itemname as string!"
                 self.items_list.append(args[i])
 
-        self.name = "FiFo({:s})".format(self.items_list[0])
         self.items_anz = len(self.items_list)
-        print(self.items_list)
+        self.name = "FiFo({:s},{:d})".format(self.items_list[0], self.items_anz)
 
 
     def getEventTrigger(self):

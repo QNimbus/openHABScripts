@@ -1,161 +1,139 @@
-from OHImports import Rule, oh, ItemRegistry, RuleSet, ChangedEventTrigger, StartupTrigger, OnOffType
+import EasyRule.rule
+import EasyRule.Triggers
+import EasyRule.replacements.itemregistry
 
-from BaseRule import BaseRule as BaseRule
+import os
 
-
-class ScriptHelper(BaseRule):
+@EasyRule.rule.BaseRule_Decorator
+class ScriptHelper():
     InitializationItem = "Initialize"
-    CheckTriggerItemsOnlyOnce = True
 
-    def logerror(self, *args, **kwargs):
-        self.logger.error(*args, **kwargs)
+    def __SetScriptPath(self, path):
+        if not path.startswith("file:/"):
+            self.log.error( 'Path not supported: "{}"'.format(path))
+            return
+        self.script_path = os.path.abspath(path[6:])
+        self.log.debug( 'Path: "{:s}"'.format(self.script_path))
 
-    def logwarn(self, *args, **kwargs):
-        self.logger.warn(*args, **kwargs)
+        #Make __file__ Available
+        self.script_vars['__file__'] = os.path.basename(self.script_path)
 
-    def loginfo(self, *args, **kwargs):
-        self.logger.info(*args, **kwargs)
+    @EasyRule.log_traceback
+    def scriptLoaded(self, *args):
+        if len(args):
+            self.__SetScriptPath(args[0])
+        for func in self.script_loaded_funcs:
+            func(self.script_vars, self.script_automation_manager, *args)
 
-    def logdebug(self, *args, **kwargs):
-        self.logger.debug(*args, **kwargs)
+    @EasyRule.log_traceback
+    def scriptUnloaded(self):
+        for func in self.script_unloaded_funcs:
+            func(self.script_vars, self.script_automation_manager)
 
-    def __init__(self, logger_name, *args, **kwargs):
+    def __init__(self, helper_name, script_vars = None, automation_manager = None, *args, **kwargs):
+        self.name_helper = helper_name
+        self.name = helper_name
+        self.path = ""
 
-        # init rule-class, no multi inheritance!
-        #        super(self.__class__, self).__init__()
-        BaseRule.__init__(self, AddToHelper=False, *args, **kwargs)
+        self.script_automation_manager = None
+        self.script_path  = None
+        self.script_vars = script_vars
+        self.script_loaded_funcs   = []
+        self.script_unloaded_funcs = []
 
-        self.logname = logger_name
-        self.logger = oh.getLogger(logger_name)
+
+        #self.name = "ScriptHelper." + helper_name
+
+        #Sonst wird .execute nie aufgerufen
+        self.EasyRuleProperties["RunOnlyAfterInitialize"] = False
 
         # init vars
         self.__rules = []
         self.__rules.append(self)
 
-        # Vars for RuleCheck
-        self.__intend_str = 80
-        self.__TriggerCheckDone = False
+        #trigger so check gets done
+        self.triggers = [EasyRule.Triggers.StartupTrigger(), # name='Startup_' + helper_name),
+                         EasyRule.Triggers.ItemChanged(ScriptHelper.InitializationItem, state="ON")]
 
-        # optional args
-        if "INIT_ITEM" in kwargs:
-            ScriptHelper.InitializationItem = kwargs["INIT_ITEM"]
+        self.item_exists = False
+        #self.initialized = {}
+        #self.rule_checked = {}
 
-    # Called by EasyRule
-    def AddRule(self, my_rule):
-        self.__rules.append(my_rule)
+    @EasyRule.log_traceback
+    def execute(self, module, input):
 
-    # check if rule triggers are valid items
-    def __CheckTriggers(self):
-        if not self.__ItemAvailable():
+        if not self.item_exists:
+            self.item_exists = EasyRule.ItemRegistry.ItemExists(ScriptHelper.InitializationItem)
+        if not self.item_exists:
             return None
-
-        # Do TriggerCheck only once!
-        if self.__TriggerCheckDone and ScriptHelper.CheckTriggerItemsOnlyOnce:
-            return None
-        self.__TriggerCheckDone = True
 
         for rule in self.__rules:
-            #if we run this the scripthelper trigger is working
-            #no need to check it
-            if rule is self:
-                continue
+            if rule != self:
+                self.ValidateRuleTriggers(rule)
+        #self.log.debug('ScriptHelper.execute -> Initialize')
+        for rule in self.__rules:
+            if rule != self:
+                rule.Initialize()
 
-            triggers = rule.getEventTrigger()
+    @EasyRule.log_traceback
+    def AddRule(self, obj):
+        self.__rules.append(obj)
+        self.log.debug( 'Added {:s} : {:s}'.format( obj.name, type(obj)))
 
-            # check if name available, else classname
-            name = rule.__dict__.get("name", rule.__class__.__name__)
+        if not self.item_exists:
+            return None
 
-            self.loginfo("+{}+".format("-" * self.__intend_str))
-            self.loginfo("| {:{width}s}|".format("Checking {}:".format(name), width=self.__intend_str - 1))
+        self.ValidateRuleTriggers(obj)
 
-            ok = True
+        if self.EasyRuleValues["Initialized"] is True:
+            obj.Initialize()
 
-            for trigger in triggers:
-                # get name
-                trigger_name = str(trigger.getClass())
-                trigger_name = trigger_name[trigger_name.rfind(".") + 1:-2]
+    @EasyRule.log_traceback
+    def ValidateRuleTriggers(self, rule):
 
-                # these triggers do not have an item
-                if (trigger_name == "StartupTrigger" or
-                            trigger_name == "ShutdownTrigger" or
-                            trigger_name == "TimerTrigger"):
-                    continue
+        if rule.EasyRuleValues['CheckedTriggers'] is True:
+            return None
 
-                # check if item exists
-                item_name = str(trigger.getItem())
-                if len(ItemRegistry.getItems(item_name)) != 1:
-                    ok = False
-                    self.logerror(
-                        "| {:{width}s}|".format(" - Could not find item '{}' for {}".format(item_name, trigger_name),
-                                                width=self.__intend_str - 1))
+        self.log.info('+{:s}'.format('-' * 80))
+        self.log.info('| Checking Triggers of Rule {}:'.format(rule.name))
+
+        _triggers = rule.triggers
+        assert isinstance(_triggers, list)
+
+        for trigger in _triggers:
+            conf_keys = trigger.configuration.keySet()
+            if 'itemName' in conf_keys:
+                item = trigger.configuration.get('itemName')
+                if not EasyRule.ItemRegistry.ItemExists(item):
+                    self.log.error('| - Item "{:s}" does not exist (Error)!'.format(item))
                 else:
-                    self.loginfo("| {:{width}s}|".format(" - Found item '{}' for {}".format(item_name, trigger_name),
-                                                         width=self.__intend_str - 1))
+                    self.log.info('| - Item "{:s}" does exists (OK)!'.format(item))
 
-            if ok:
-                self.loginfo("| {:{width}s}|".format("Rule '{}' is OK!".format(name), width=self.__intend_str - 1))
-            else:
-                self.logerror("| {:{width}s}|".format("Rule '{}' is not OK!".format(name), width=self.__intend_str - 1))
+        self.log.info('+{:s}'.format('-' * 80))
+        rule.EasyRuleValues['CheckedTriggers'] = True
+        #a.configuration.get('itemName')
 
-        # checking done
-        self.loginfo("+{}+".format("-" * self.__intend_str))
-        return None
+        #self.initialized[obj.name] = False
+        #self.rule_checked[obj.name] = False
 
-    def GetRules(self):
+        # if not self.item_exists:
+        #     self.item_exists = EasyRule.ItemRegistry.ItemExists(ScriptHelper.InitializationItem)
 
-        # print Rule names
-        self.loginfo("")
-        self.loginfo("+{}+".format("-" * self.__intend_str))
-        self.loginfo("| {:{width}s}|".format("Adding Rules:", width=self.__intend_str - 1))
-        for rule in self.__rules:
-            #link specific logger to rule
-            rule.logger = oh.getLogger("{:s}.{:s}".format(self.logname, rule.name))
+        # if self.item_exists:
+        #     self.log.debug('Initializing "{:s}"'.format(obj.name))
+        #     obj.Initialize()
+        #     self.initialized[obj.name] = True
 
-            #print rulename
-            self.loginfo("|  - {:{width}s}|".format(rule.name, width=self.__intend_str - 4))
-        self.loginfo("+{}+".format("-" * self.__intend_str))
-        self.loginfo("")
-
-        # Check Triggers
-        try:
-            self.__CheckTriggers()
-        except Exception as e:
-            self.logerror("{}\n{}".format(e, traceback.format_exc()))
-            raise e
-
-        return RuleSet(self.__rules)
-
-    def __ItemAvailable(self):
-        # Erst wenn ein item existiert soll initialisiert werden
-        if not len(ItemRegistry.getItems(ScriptHelper.InitializationItem)):
-            return False
-        if str(ItemRegistry.getItem(ScriptHelper.InitializationItem).state) == "Uninitialized":
-            return False
-        return True
-
-    def getEventTrigger(self):
-        return [
-            ChangedEventTrigger(ScriptHelper.InitializationItem, None, OnOffType.ON),
-            StartupTrigger()
-        ]
-
+    #should get never called
     def Initialize(self):
         pass
 
-    def execute(self, event):
-        if not self.__ItemAvailable():
-            return None
+    def GetRules(self):
+        return self.__rules
 
-        # Check Triggers
-        try:
-            self.__CheckTriggers()
-        except Exception as e:
-            self.logerror("{}\n{}".format(e, traceback.format_exc()))
-            raise e
-
-        # initialize Classes
-        for k in self.__rules:
-            try:
-                k.Initialize()
-            except Exception as e:
-                self.logger.error("{:20s} | Error: {}".format("ScriptHelper", e))
+    def __repr__(self):
+        __list = self.__rules
+        if __list and __list[0] == self:
+            __list[0] = "self"
+        __list = str(__list).replace("'self'", "self")
+        return '<ScriptHelper \'{}\': {}>'.format(self.name, __list)

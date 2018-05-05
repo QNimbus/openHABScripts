@@ -1,38 +1,43 @@
+#Imports from openhab library
+from EasyRule import openhab
+from EasyRule.openhab.log import LOG_PREFIX, log_traceback
 
-#for Debug reload all modules
-import __helper
-import BaseRule
-import ScriptHelper
-import SimpleRules
+import EasyRule.openhab.log as _log
+#reload(_log)
 
-import OHTypes
-import FiFo
+import EasyRule.replacements
+#    as __rep
+#reload (__rep)
+
+from EasyRule.replacements import BusEvent, ItemRegistry, PersistenceExtensions, ItemNotFoundException, ItemNotUniqueException, RuleRegistry
+
+# Make it more easy available
+import EasyRule.Items
+
+#Load required components
+import EasyRule.components
 
 
-reload(__helper)
-reload(BaseRule)
-reload(ScriptHelper)
-reload(SimpleRules)
-reload(OHTypes)
-reload(FiFo)
 
-#decorators
-from SimpleRules    import ItemChangedDecorator     as ItemChanged
-from SimpleRules    import ItemUpdatedDecorator     as ItemUpdated
-from SimpleRules    import TimerTriggerDecorator    as TimerTrigger
-from SimpleRules    import CommandDecorator         as CommandTrigger
+from EasyRule.scripthelper import ScriptHelper
 
-from BaseRule       import BaseRuleDecorator        as Rule
-from BaseRule       import SetExceptionHandler      as SetExceptionHandler
+import EasyRule.scripthelper as __scripthelper
+#reload(__scripthelper)
 
-#ScriptHelper
-from ScriptHelper   import ScriptHelper
+import EasyRule.rule as __rule
+#reload(__rule)
 
-from OHTypes import ConvertItem
-from OHTypes import ItemRegistry as __ItemRegistry
-from OHTypes import BusEvent as __BusEvent
+import EasyRule._helper as __helper
+#reload(__helper)
 
-from FiFo import FiFo
 
-ItemRegistry = ir = __ItemRegistry()
-BusEvent = be = __BusEvent()
+from EasyRule.rule import BaseRule_Decorator    as Rule
+from EasyRule.rule import ItemChanged_Decorator as ItemChanged
+from EasyRule.rule import ItemUpdated_Decorator as ItemUpdated
+from EasyRule.rule import ItemCommand_Decorator as ItemCommand
+from EasyRule.rule import Cron_Decorator        as Cron             #Better name reqired
+
+
+
+import EasyRule.Triggers as __trig
+#reload(__trig)
